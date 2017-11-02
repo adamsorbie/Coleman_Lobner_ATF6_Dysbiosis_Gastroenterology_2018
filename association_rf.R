@@ -3,6 +3,7 @@ library("randomForest")
 library("plyr") # for "arrange" function
 library("rfUtilities") # to test model significance
 library("caret") # leave-one-out cross-validation accuracies and nearZeroVar function 
+library(pROC)
 
 setwd("C:/Users/PhD/ml_R/ml_R")
 
@@ -50,4 +51,5 @@ RF_phenotype_classify_importances$features <- rownames( RF_phenotype_classify_im
 RF_phenotype_classify_importances_sorted <- arrange( RF_phenotype_classify_importances  , desc(MeanDecreaseAccuracy)  )
 barplot(RF_phenotype_classify_importances_sorted$MeanDecreaseAccuracy, ylab="Mean Decrease in Accuracy (Variable Importance)", main="RF Classification Variable Importance Distribution")
 
-barplot(RF_phenotype_classify_importances_sorted[1:10,"MeanDecreaseAccuracy"], names.arg=RF_phenotype_classify_importances_sorted[1:10,"features"] , ylab="Mean Decrease in Accuracy (Variable Importance)", las=2, ylim=c(0,0.02), main="Classification RF")  
+barplot(RF_phenotype_classify_importances_sorted[1:10,"MeanDecreaseAccuracy"], names.arg=RF_phenotype_classify_importances_sorted[1:10,"features"] , ylab="Mean Decrease in Accuracy (Variable Importance)", las=2, ylim=c(0,0.02), main="Classification RF") 
+
