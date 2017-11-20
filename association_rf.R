@@ -20,8 +20,8 @@ return( table [ row2keep , , drop=F ])
 }
 
 
-otu_table <- read.table("OTUassociation.txt", sep="\t", header=T, row.names=1, stringsAsFactors=FALSE, comment.char="", check.names=FALSE)  
-metadata <- read.table("mapping_association.txt", sep="\t", header=T, row.names=1, stringsAsFactors=TRUE, comment.char="", check.names=FALSE)
+otu_table <- read.table("5wk_otu.csv", sep=",", header=T, row.names=1, stringsAsFactors=FALSE, comment.char="", check.names=FALSE)  
+metadata <- read.table("metadata_5wk.csv", sep=",", header=T, row.names=1, stringsAsFactors=TRUE, comment.char="", check.names=FALSE)
 
 otu_nonzero_counts <- apply(otu_table, 1, function(y) sum(length(which(y > 0))))
 hist(otu_nonzero_counts, breaks=100, col="grey", main="", ylab="Number of OTUs", xlab="Number of Non-Zero Values")
@@ -52,4 +52,19 @@ RF_phenotype_classify_importances_sorted <- arrange( RF_phenotype_classify_impor
 barplot(RF_phenotype_classify_importances_sorted$MeanDecreaseAccuracy, ylab="Mean Decrease in Accuracy (Variable Importance)", main="RF Classification Variable Importance Distribution")
 
 barplot(RF_phenotype_classify_importances_sorted[1:10,"MeanDecreaseAccuracy"], names.arg=RF_phenotype_classify_importances_sorted[1:10,"features"] , ylab="Mean Decrease in Accuracy (Variable Importance)", las=2, ylim=c(0,0.02), main="Classification RF") 
+
+testing <- read.table('association_to_predict.csv', sep = ",",header=T, row.names=1, stringsAsFactors=FALSE, comment.char="", check.names=FALSE )
+
+testing_nonzero_counts <- apply(testing, 1, function(y) sum(length(which(y > 0))))
+hist(testing_nonzero_counts, breaks=100, col="grey", main="", ylab="Number of OTUs", xlab="Number of Non-Zero Values")
+
+
+testing_rare_removed <- remove_rare(table=testing, cutoff_pro=0.2)
+
+testing_rare_removed_norm <- sweep(testing_rare_removed, 2, colSums(testing_rare_removed) , '/')*100
+
+testing_scaled <- scale(testing_rare_removed_norm, center = TRUE, scale = TRUE)
+
+testing_scaled_Phenotype <- data.frame(t(testing_scaled))  
+testing_scaled_Phenotype$Phenotype <- metadata[rownames(testing_scaled_Phenotype), "Phenotype"]  
 
