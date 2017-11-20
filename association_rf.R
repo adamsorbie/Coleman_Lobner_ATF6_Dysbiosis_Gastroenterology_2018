@@ -68,3 +68,4 @@ testing_scaled <- scale(testing_rare_removed_norm, center = TRUE, scale = TRUE)
 testing_scaled_Phenotype <- data.frame(t(testing_scaled))  
 testing_scaled_Phenotype$Phenotype <- metadata[rownames(testing_scaled_Phenotype), "Phenotype"]  
 
+pred <- predict(RF_phenotype_classify, newdata = testing_scaled_Phenotype)
