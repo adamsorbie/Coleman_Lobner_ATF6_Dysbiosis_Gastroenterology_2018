@@ -7,31 +7,13 @@ library(pROC)
 
 setwd("C:/Users/PhD/ml_R/ml_R")
 
-remove_rare <- function( table , cutoff_pro ) {
-row2keep <- c()
-cutoff <- ceiling( cutoff_pro * ncol(table) )  
-for ( i in 1:nrow(table) ) {
-  row_nonzero <- length( which( table[ i , ]  > 0 ) ) 
-  if ( row_nonzero > cutoff ) {
-    row2keep <- c( row2keep , i)
-  }
-}
-return( table [ row2keep , , drop=F ])
-}
 
 
 otu_table <- read.table("5wk_otu.csv", sep=",", header=T, row.names=1, stringsAsFactors=FALSE, comment.char="", check.names=FALSE)  
 metadata <- read.table("metadata_5wk.csv", sep=",", header=T, row.names=1, stringsAsFactors=TRUE, comment.char="", check.names=FALSE)
 
-otu_nonzero_counts <- apply(otu_table, 1, function(y) sum(length(which(y > 0))))
-hist(otu_nonzero_counts, breaks=100, col="grey", main="", ylab="Number of OTUs", xlab="Number of Non-Zero Values")
 
-
-otu_table_rare_removed <- remove_rare(table=otu_table, cutoff_pro=0.2)
-
-otu_table_rare_removed_norm <- sweep(otu_table_rare_removed, 2, colSums(otu_table_rare_removed) , '/')*100
-
-otu_table_scaled <- scale(otu_table_rare_removed_norm, center = TRUE, scale = TRUE)
+otu_table_scaled <- scale(otu_table, center = TRUE, scale = TRUE)
 
 otu_table_scaled_Phenotype <- data.frame(t(otu_table_scaled))  
 otu_table_scaled_Phenotype$Phenotype <- metadata[rownames(otu_table_scaled_Phenotype), "Phenotype"]  
@@ -55,15 +37,8 @@ barplot(RF_phenotype_classify_importances_sorted[1:10,"MeanDecreaseAccuracy"], n
 
 testing <- read.table('association_to_predict.csv', sep = ",",header=T, row.names=1, stringsAsFactors=FALSE, comment.char="", check.names=FALSE )
 
-testing_nonzero_counts <- apply(testing, 1, function(y) sum(length(which(y > 0))))
-hist(testing_nonzero_counts, breaks=100, col="grey", main="", ylab="Number of OTUs", xlab="Number of Non-Zero Values")
 
-
-testing_rare_removed <- remove_rare(table=testing, cutoff_pro=0.2)
-
-testing_rare_removed_norm <- sweep(testing_rare_removed, 2, colSums(testing_rare_removed) , '/')*100
-
-testing_scaled <- scale(testing_rare_removed_norm, center = TRUE, scale = TRUE)
+testing_scaled <- scale(testing, center = TRUE, scale = TRUE)
 
 testing_scaled_Phenotype <- data.frame(t(testing_scaled))  
 testing_scaled_Phenotype$Phenotype <- metadata[rownames(testing_scaled_Phenotype), "Phenotype"]  
