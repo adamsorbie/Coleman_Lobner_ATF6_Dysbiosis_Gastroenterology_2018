@@ -1,23 +1,32 @@
-rm(list=ls())
 library("randomForest")
-library("plyr") # for "arrange" function
-library("rfUtilities") # to test model significance
-library("caret") # leave-one-out cross-validation accuracies and nearZeroVar function 
-library(pROC)
+library("plyr") 
+library("rfUtilities") 
+library("caret") 
+library("pROC")
 
 setwd("C:/Users/PhD/ml_R/ml_R")
 
 
-
+# load data 
 otu_table <- read.table("5wk_otu.csv", sep=",", header=T, row.names=1, stringsAsFactors=FALSE, comment.char="", check.names=FALSE)  
 metadata <- read.table("metadata_5wk.csv", sep=",", header=T, row.names=1, stringsAsFactors=TRUE, comment.char="", check.names=FALSE)
+metadata_test <- read.table("metadata_asc.csv", sep=",", header=T, row.names=1, stringsAsFactors=TRUE, comment.char="", check.names=FALSE)
+testing <- read.table('association_to_predict.csv', sep = ",",header=T, row.names=1, stringsAsFactors=FALSE, comment.char="", check.names=FALSE )
 
-
+# scale pre-preprocessed training data (normalised relative abundance with abundance cutoff of 0.5% in at least one sample) and merge phenotype column from metadata
 otu_table_scaled <- scale(otu_table, center = TRUE, scale = TRUE)
 
 otu_table_scaled_Phenotype <- data.frame(t(otu_table_scaled))  
-otu_table_scaled_Phenotype$Phenotype <- metadata[rownames(otu_table_scaled_Phenotype), "Phenotype"]  
+otu_table_scaled_Phenotype$Phenotype <- metadata[rownames(otu_table_scaled_Phenotype), "Phenotype"] 
 
+ 
+# # scale pre-preprocessed test data and merge phenotype column from metadata_test
+testing_scaled <- scale(testing, center = TRUE, scale = TRUE)
+
+testing_scaled_phenotype <- data.frame(t(testing_scaled)) 
+testing_scaled_phenotype$Phenotype <- metadata_test[rownames(testing_scaled_phenotype), "Phenotype"] 
+
+# set random seed to 42 
 set.seed(42)
 
 RF_phenotype_classify <- randomForest( x=otu_table_scaled_Phenotype[,1:(ncol(otu_table_scaled_Phenotype)-1)] , y=otu_table_scaled_Phenotype[ , ncol(otu_table_scaled_Phenotype)] , ntree=501, importance=TRUE, proximities=TRUE )
@@ -35,12 +44,8 @@ barplot(RF_phenotype_classify_importances_sorted$MeanDecreaseAccuracy, ylab="Mea
 
 barplot(RF_phenotype_classify_importances_sorted[1:10,"MeanDecreaseAccuracy"], names.arg=RF_phenotype_classify_importances_sorted[1:10,"features"] , ylab="Mean Decrease in Accuracy (Variable Importance)", las=2, ylim=c(0,0.02), main="Classification RF") 
 
-testing <- read.table('association_to_predict.csv', sep = ",",header=T, row.names=1, stringsAsFactors=FALSE, comment.char="", check.names=FALSE )
 
 
-testing_scaled <- scale(testing, center = TRUE, scale = TRUE)
+pred <- predict(RF_phenotype_classify, newdata = testing_scaled_phenotype)
 
-testing_scaled_Phenotype <- data.frame(t(testing_scaled))  
-testing_scaled_Phenotype$Phenotype <- metadata[rownames(testing_scaled_Phenotype), "Phenotype"]  
-
-pred <- predict(RF_phenotype_classify, newdata = testing_scaled_Phenotype)
+table(pred, testing_scaled_phenotype$Phenotype)
