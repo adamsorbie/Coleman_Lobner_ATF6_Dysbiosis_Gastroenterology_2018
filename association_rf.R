@@ -29,12 +29,13 @@ testing_scaled_phenotype$Phenotype <- metadata_test[rownames(testing_scaled_phen
 # set random seed to 42 
 set.seed(42)
 
-RF_phenotype_classify <- randomForest( x=otu_table_scaled_Phenotype[,1:(ncol(otu_table_scaled_Phenotype)-1)] , y=otu_table_scaled_Phenotype[ , ncol(otu_table_scaled_Phenotype)] , ntree=501, importance=TRUE, proximities=TRUE )
-RF_phenotype_classify_sig <- rf.significance( x=RF_phenotype_classify ,  xdata=otu_table_scaled_Phenotype[,1:(ncol(otu_table_scaled_Phenotype)-1)] , nperm=1000 , ntree=501 )  
+RF_phenotype_classify <- randomForest( x=otu_table_scaled_Phenotype[,1:(ncol(otu_table_scaled_Phenotype)-1)] , y=otu_table_scaled_Phenotype[ , ncol(otu_table_scaled_Phenotype)] , ntree=1001, importance=TRUE, proximities=TRUE )
+RF_phenotype_classify_sig <- rf.significance( x=RF_phenotype_classify ,  xdata=otu_table_scaled_Phenotype[,1:(ncol(otu_table_scaled_Phenotype)-1)] , nperm=1000 , ntree=1001 )  
 
 fit_control <- trainControl( method = "LOOCV" )    
 
-RF_phenotype_classify_loocv <- train( otu_table_scaled_Phenotype[,1:(ncol(otu_table_scaled_Phenotype)-1)] , y=otu_table_scaled_Phenotype[, ncol(otu_table_scaled_Phenotype)] , method="rf", ntree=501 , tuneGrid=data.frame( mtry=25 ) , trControl=fit_control )
+RF_phenotype_classify_loocv <- train( otu_table_scaled_Phenotype[,1:(ncol(otu_table_scaled_Phenotype)-1)] , y=otu_table_scaled_Phenotype[, ncol(otu_table_scaled_Phenotype)] , method="rf", ntree=1001 , tuneGrid=data.frame( mtry=25 ) , trControl=fit_control )
+RF_phenotype_classify_loocv$results   
 
 par(mfrow=c(1,2))
 RF_phenotype_classify_importances <- as.data.frame( RF_phenotype_classify$importance )
@@ -44,7 +45,12 @@ barplot(RF_phenotype_classify_importances_sorted$MeanDecreaseAccuracy, ylab="Mea
 
 barplot(RF_phenotype_classify_importances_sorted[1:10,"MeanDecreaseAccuracy"], names.arg=RF_phenotype_classify_importances_sorted[1:10,"features"] , ylab="Mean Decrease in Accuracy (Variable Importance)", las=2, ylim=c(0,0.02), main="Classification RF") 
 
-
+k <- dim()[1]
+predictions <- c()
+for (i in 1:k) {
+  model <- glmnet(x[-i,], y[-i], family="binomial")
+  predictions <- c(predictions, predict(model, newx=x[i,]))
+}
 
 pred <- predict(RF_phenotype_classify, newdata = testing_scaled_phenotype)
 
