@@ -4,7 +4,7 @@ library("rfUtilities")
 library("caret") 
 library("pROC")
 
-setwd("C:/Users/PhD/ml_R/ml_R")
+setwd("~/ml_R/ml_R")
 
 
 # load data 
@@ -24,7 +24,7 @@ otu_table_scaled_Phenotype$Phenotype <- metadata[rownames(otu_table_scaled_Pheno
 testing_scaled <- scale(testing, center = TRUE, scale = TRUE)
 
 testing_scaled_phenotype <- data.frame(t(testing_scaled)) 
-testing_scaled_phenotype$Phenotype <- metadata_test[rownames(testing_scaled_phenotype), "Phenotype"] 
+testing_scaled_phenotype$problem_id <- metadata_test[rownames(testing_scaled_phenotype), "problem_id"] 
 
 # set random seed to 42 
 set.seed(42)
@@ -46,13 +46,13 @@ barplot(RF_phenotype_classify_importances_sorted$MeanDecreaseAccuracy, ylab="Mea
 
 barplot(RF_phenotype_classify_importances_sorted[1:10,"MeanDecreaseAccuracy"], names.arg=RF_phenotype_classify_importances_sorted[1:10,"features"] , ylab="Mean Decrease in Accuracy (Variable Importance)", las=2, ylim=c(0,0.02), main="Classification RF") 
 
-k <- dim()[1]
-predictions <- c()
-for (i in 1:k) {
-  model <- glmnet(x[-i,], y[-i], family="binomial")
-  predictions <- c(predictions, predict(model, newx=x[i,]))
-}
+#k <- dim()[1]
+#predictions <- c()
+#for (i in 1:k) {
+ # model <- glmnet(x[-i,], y[-i], family="binomial")
+#  predictions <- c(predictions, predict(model, newx=x[i,]))
+#}
 
 pred <- predict(RF_phenotype_classify, newdata = testing_scaled_phenotype)
 
-table(pred, testing_scaled_phenotype$Phenotype)
+table(pred, testing_scaled_phenotype$problem_id)
