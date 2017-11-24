@@ -1,4 +1,5 @@
-library("randomForest")
+rm(list=ls())
+("randomForest")
 library("plyr") 
 library("rfUtilities") 
 library("caret") 
@@ -32,7 +33,7 @@ set.seed(42)
 RF_phenotype_classify <- randomForest( x=otu_table_scaled_Phenotype[,1:(ncol(otu_table_scaled_Phenotype)-1)] , y=otu_table_scaled_Phenotype[ , ncol(otu_table_scaled_Phenotype)] , ntree=1001, importance=TRUE, proximities=TRUE )
 RF_phenotype_classify_sig <- rf.significance( x=RF_phenotype_classify ,  xdata=otu_table_scaled_Phenotype[,1:(ncol(otu_table_scaled_Phenotype)-1)] , nperm=1000 , ntree=1001 )  
 
-fit_control <- trainControl( method = "LOOCV" )    
+fit_control <- trainControl( method = "LOOCV", savePredictions = TRUE)    
 
 RF_phenotype_classify_loocv <- train( otu_table_scaled_Phenotype[,1:(ncol(otu_table_scaled_Phenotype)-1)] , y=otu_table_scaled_Phenotype[, ncol(otu_table_scaled_Phenotype)] , method="rf", ntree=1001 , tuneGrid=data.frame( mtry=25 ) , trControl=fit_control )
 RF_phenotype_classify_loocv$results   
@@ -49,10 +50,15 @@ barplot(RF_phenotype_classify_importances_sorted[1:10,"MeanDecreaseAccuracy"], n
 #k <- dim()[1]
 #predictions <- c()
 #for (i in 1:k) {
- # model <- glmnet(x[-i,], y[-i], family="binomial")
+ # model <- RF_phenotype_classify(x[-i,], y[-i], family="binomial")
 #  predictions <- c(predictions, predict(model, newx=x[i,]))
 #}
 
 pred <- predict(RF_phenotype_classify, newdata = testing_scaled_phenotype)
 
 table(pred, testing_scaled_phenotype$problem_id)
+
+RF_test_classify <- randomForest(x=testing_scaled_phenotype[,1:(ncol(testing_scaled_phenotype)-1)], y = testing_scaled_phenotype[ , ncol(testing_scaled_phenotype)] , ntree=1001, importance = TRUE, proximities=TRUE )
+RF_test_classify_importances <- as.data.frame( RF_test_classify$importance)
+RF_test_classify_importances$features <- rownames( RF_test_classify_importances)
+RF_test_classify_importances <- arrange( RF_test_classify_importances, desc(MeanDecreaseAccuracy))
