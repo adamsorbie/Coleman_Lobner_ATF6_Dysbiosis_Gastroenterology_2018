@@ -77,7 +77,8 @@ for (i in 1:k) {
 }
 
 pred <- predict(RF_phenotype_classify, newdata = testing_scaled_phenotype)
-probs_pred <- predict(RF_phenotype_classify, newdata = testing_scaled_phenotype, type="prob")
+probs_pr<- predict(RF_phenotype_classify, newdata = testing_scaled_phenotype, type="prob")
+probs_predict <- prediction()
 
 table(pred, testing_scaled_phenotype$problem_id)
 
