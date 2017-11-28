@@ -1,11 +1,28 @@
-rm(list=ls())
-("randomForest")
-library("plyr") 
-library("rfUtilities") 
-library("caret") 
-library("pROC")
+packages <- c("randomForest", "plyr", "rfUtilities", "caret", "pROC")
 
-setwd("~/ml_R/ml_R")
+InsPack <- function(pack)
+{
+  if ((pack %in% installed.packages()) == FALSE) {
+    install.packages(pack,repos ="http://cloud.r-project.org/")
+  } 
+}
+
+
+lapply(packages, InsPack)
+
+
+lib <- lapply(packages, require, character.only = TRUE)
+
+flag <- all(as.logical(lib))
+
+
+if(!flag) { stop("
+    It was not possible to install all required R libraries properly.
+                 Please check the installation of all required libraries manually.\n
+                 Required libaries: randomForest, plyr, rfUtilities, caret, pROC")
+}
+
+setwd("C:/Users/PhD/ml_R/ml_R")
 
 
 # load data 
@@ -30,12 +47,17 @@ testing_scaled_phenotype$problem_id <- metadata_test[rownames(testing_scaled_phe
 # set random seed to 42 
 set.seed(42)
 
-RF_phenotype_classify <- randomForest( x=otu_table_scaled_Phenotype[,1:(ncol(otu_table_scaled_Phenotype)-1)] , y=otu_table_scaled_Phenotype[ , ncol(otu_table_scaled_Phenotype)] , ntree=1001, importance=TRUE, proximities=TRUE )
-RF_phenotype_classify_sig <- rf.significance( x=RF_phenotype_classify ,  xdata=otu_table_scaled_Phenotype[,1:(ncol(otu_table_scaled_Phenotype)-1)] , nperm=1000 , ntree=1001 )  
+# set x and y 
+
+x <- otu_table_scaled_Phenotype[,1:(ncol(otu_table_scaled_Phenotype)-1)] 
+y <- otu_table_scaled_Phenotype[ , ncol(otu_table_scaled_Phenotype)]
+
+RF_phenotype_classify <- randomForest( x=x , y=y , ntree=1001, importance=TRUE, proximities=TRUE )
+RF_phenotype_classify_sig <- rf.significance( x=RF_phenotype_classify ,  xdata=x , nperm=1000 , ntree=1001 )  
 
 fit_control <- trainControl( method = "LOOCV", savePredictions = TRUE)    
 
-RF_phenotype_classify_loocv <- train( otu_table_scaled_Phenotype[,1:(ncol(otu_table_scaled_Phenotype)-1)] , y=otu_table_scaled_Phenotype[, ncol(otu_table_scaled_Phenotype)] , method="rf", ntree=1001 , tuneGrid=data.frame( mtry=25 ) , trControl=fit_control )
+RF_phenotype_classify_loocv <- train( x , y=y , method="rf", ntree=1001 , tuneGrid=data.frame( mtry=25 ) , trControl=fit_control )
 RF_phenotype_classify_loocv$results   
 
 par(mfrow=c(1,2))
@@ -47,14 +69,15 @@ barplot(RF_phenotype_classify_importances_sorted$MeanDecreaseAccuracy, ylab="Mea
 
 barplot(RF_phenotype_classify_importances_sorted[1:10,"MeanDecreaseAccuracy"], names.arg=RF_phenotype_classify_importances_sorted[1:10,"features"] , ylab="Mean Decrease in Accuracy (Variable Importance)", las=2, ylim=c(0,0.02), main="Classification RF") 
 
-#k <- dim()[1]
-#predictions <- c()
-#for (i in 1:k) {
- # model <- RF_phenotype_classify(x[-i,], y[-i], family="binomial")
-#  predictions <- c(predictions, predict(model, newx=x[i,]))
-#}
+k <- dim(otu_table_scaled_Phenotype)[1]
+predictions <- c()
+for (i in 1:k) {
+  model <- RF_phenotype_classify <- randomForest( x=x , y=y , ntree=1001)
+  predictions <- c(predictions, predict(model, newx=x[i,]))
+}
 
 pred <- predict(RF_phenotype_classify, newdata = testing_scaled_phenotype)
+probs_pred <- predict(RF_phenotype_classify, newdata = testing_scaled_phenotype, type="prob")
 
 table(pred, testing_scaled_phenotype$problem_id)
 
@@ -62,3 +85,10 @@ RF_test_classify <- randomForest(x=testing_scaled_phenotype[,1:(ncol(testing_sca
 RF_test_classify_importances <- as.data.frame( RF_test_classify$importance)
 RF_test_classify_importances$features <- rownames( RF_test_classify_importances)
 RF_test_classify_importances <- arrange( RF_test_classify_importances, desc(MeanDecreaseAccuracy))
+
+
+write.csv(RF_test_classify_importances, file= "feature_importances_tumor.csv")
+
+probs
+probs_pred
+
