@@ -1,4 +1,4 @@
-packages <- c("randomForest", "plyr", "rfUtilities", "caret", "pROC", "ROCR")
+packages <- c("randomForest", "plyr", "rfUtilities", "caret", "ggplot2", "ROCR")
 
 InsPack <- function(pack)
 {
@@ -31,7 +31,7 @@ metadata <- read.table("metadata_5wk.csv", sep=",", header=T, row.names=1, strin
 metadata_test <- read.table("metadata_asc.csv", sep=",", header=T, row.names=1, stringsAsFactors=TRUE, comment.char="", check.names=FALSE)
 testing <- read.table('association_to_predict.csv', sep = ",",header=T, row.names=1, stringsAsFactors=FALSE, comment.char="", check.names=FALSE )
 
-# scale pre-preprocessed training data (normalised relative abundance filtered by those with non-zero values in >25% samples) and merge phenotype column from metadata
+# scale pre-preprocessed training data (normalised relative abundance filtered 1% abundance in at least one sample) and merge phenotype column from metadata
 otu_table_scaled <- scale(otu_table, center = TRUE, scale = TRUE)
 
 otu_table_scaled_Phenotype <- data.frame(t(otu_table_scaled))  
@@ -42,7 +42,7 @@ otu_table_scaled_Phenotype$Phenotype <- metadata[rownames(otu_table_scaled_Pheno
 testing_scaled <- scale(testing, center = TRUE, scale = TRUE)
 
 testing_scaled_phenotype <- data.frame(t(testing_scaled)) 
-testing_scaled_phenotype$problem_id <- metadata_test[rownames(testing_scaled_phenotype), "problem_id"] 
+testing_scaled_phenotype$problem_id <- metadata_test[rownames(testing_scaled_phenotype), "Phenotype"] 
 
 # set random seed to 42 
 set.seed(42)
@@ -68,32 +68,38 @@ par(mfrow=c(1,2))
 RF_phenotype_classify_importances <- as.data.frame( RF_phenotype_classify$importance )
 RF_phenotype_classify_importances$features <- rownames( RF_phenotype_classify_importances )
 RF_phenotype_classify_importances_sorted <- arrange( RF_phenotype_classify_importances  , desc(MeanDecreaseAccuracy)  )
-barplot(RF_phenotype_classify_importances_sorted[1:10,"MeanDecreaseAccuracy"], names.arg=RF_phenotype_classify_importances_sorted[1:10,"features"] , ylab="Mean Decrease in Accuracy (Variable Importance)", las=2, ylim=c(0,0.02), main="Classification RF") 
 
-# repeat loocv and store result in vector at each step 
-k <- dim(otu_table_scaled_Phenotype)[1]
-predictions <- c()
-for (i in 1:k) {
-  model <- RF_phenotype_classify <- train( x , y=y , method="rf",  ntree=1001)
-  predictions <- c(predictions, predict(model, newx=x[i,]))
-}
 
 # predict test association data 
-pred <- predict(RF_phenotype_classify, newdata = testing_scaled_phenotype)
-probs_pr<- predict(RF_phenotype_classify, newdata = testing_scaled_phenotype, type="prob", tuneGrid=data.frame( mtry=25 ) , trControl=fit_control )
-probs_predict <- prediction()
+predict <- predict(RF_phenotype_classify, newdata = testing_scaled_phenotype)
+
+# predict probabilities and plot ROC
+prob <- predict(RF_phenotype_classify, type="prob", newdata = testing_scaled_phenotype)[,2]
+pred <- prediction(prob, testing_scaled_phenotype$problem_id)
+perf <- performance(pred, "tpr", "fpr")
+
+auc <- performance(pred,"auc")
+auc <- auc@y.values[[1]]
+
+title <- "ROC Curve association" 
+
+par(pty="s")
+plot(perf,main=title,col=2,lwd=2,asp=1)
+abline(a=0,b=1,lwd=2,lty=2,col="gray")
+text(1,0.15,labels=paste("AUC = ",round(auc,digits=2),sep=""),adj=1)
+text(1,0.10,labels=paste("Accuracy = 75%",sep=""),adj=1)
+
 
 # output confusion matrix
-table(pred, testing_scaled_phenotype$problem_id)
+table(predict, testing_scaled_phenotype$problem_id)
 
 RF_test_classify <- randomForest(x=testing_scaled_phenotype[,1:(ncol(testing_scaled_phenotype)-1)], y = testing_scaled_phenotype[ , ncol(testing_scaled_phenotype)] , ntree=1001, importance = TRUE, proximities=TRUE )
 RF_test_classify_importances <- as.data.frame( RF_test_classify$importance)
 RF_test_classify_importances$features <- rownames( RF_test_classify_importances)
-RF_test_classify_importances <- arrange( RF_test_classify_importances, desc(MeanDecreaseAccuracy))
+RF_test_classify_importances <- arrange( RF_test_classify_importances, desc(T))
 
 
 write.csv(RF_test_classify_importances, file= "feature_importances_tumor.csv")
 
-probs_pr
-probs_predict
+
 
