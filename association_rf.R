@@ -22,8 +22,13 @@ if(!flag) { stop("
                  Required libaries: randomForest, plyr, rfUtilities, caret, pROC")
 }
 
-setwd("C:/Users/PhD/ml_R/ml_R")
+####################################################################################################################################################
+# Set working directory manually
+home <- "C:/Users/adam-/ml_R/ml_R"
+work <- "C:/Users/PhD/ml_R/ml_R"
+setwd(home)
 
+####################################################################################################################################################
 
 # load data 
 otu_table <- read.table("5wk_otu.csv", sep=",", header=T, row.names=1, stringsAsFactors=FALSE, comment.char="", check.names=FALSE)  
@@ -42,7 +47,7 @@ otu_table_scaled_Phenotype$Phenotype <- metadata[rownames(otu_table_scaled_Pheno
 testing_scaled <- scale(testing, center = TRUE, scale = TRUE)
 
 testing_scaled_phenotype <- data.frame(t(testing_scaled)) 
-testing_scaled_phenotype$problem_id <- metadata_test[rownames(testing_scaled_phenotype), "Phenotype"] 
+testing_scaled_phenotype$Phenotype <- metadata_test[rownames(testing_scaled_phenotype), "Phenotype"] 
 
 # set random seed to 42 
 set.seed(42)
@@ -53,18 +58,19 @@ x <- otu_table_scaled_Phenotype[,1:(ncol(otu_table_scaled_Phenotype)-1)]
 y <- otu_table_scaled_Phenotype[ , ncol(otu_table_scaled_Phenotype)]
 
 # classify training set and test significance
-RF_phenotype_classify <- randomForest( x=x , y=y , ntree=1001, importance=TRUE, proximities=TRUE )
-RF_phenotype_classify_sig <- rf.significance( x=RF_phenotype_classify ,  xdata=x , nperm=1000 , ntree=1001 )  
+RF_phenotype_classify <- randomForest( x=x , y=y , ntree=1001, importance=TRUE, proximities=TRUE,  )
+RF_phenotype_classify_sig <- rf.significance( x=RF_phenotype_classify ,  xdata=x , nperm=1000 , ntree=1001) 
+RF_phenotype_classify
+RF_phenotype_classify_sig
 
 
 # run leave-one out cross validation to test model accuracy
 fit_control <- trainControl( method = "LOOCV", savePredictions = TRUE)    
 
-RF_phenotype_classify_loocv <- train( x , y=y , method="rf", ntree=1001 , tuneGrid=data.frame( mtry=25 ) , trControl=fit_control )
+RF_phenotype_classify_loocv <- train( x , y=y , method="rf", ntree=1001 , tuneGrid=data.frame( mtry=c(5:26)) , trControl=fit_control )
 RF_phenotype_classify_loocv$results  
 
 # get feature importance, sort by mean decrease in accuracy and plot top 10
-par(mfrow=c(1,2))
 RF_phenotype_classify_importances <- as.data.frame( RF_phenotype_classify$importance )
 RF_phenotype_classify_importances$features <- rownames( RF_phenotype_classify_importances )
 RF_phenotype_classify_importances_sorted <- arrange( RF_phenotype_classify_importances  , desc(MeanDecreaseAccuracy)  )
@@ -73,9 +79,15 @@ RF_phenotype_classify_importances_sorted <- arrange( RF_phenotype_classify_impor
 # predict test association data 
 predict <- predict(RF_phenotype_classify, newdata = testing_scaled_phenotype)
 
+# output confusion matrix
+result <- confusionMatrix(predict, testing_scaled_phenotype$Phenotype)
+precision <- result$byClass['Pos Pred Value']    
+recall <- result$byClass['Sensitivity']
+
+
 # predict probabilities and plot ROC
 prob <- predict(RF_phenotype_classify, type="prob", newdata = testing_scaled_phenotype)[,2]
-pred <- prediction(prob, testing_scaled_phenotype$problem_id)
+pred <- prediction(prob, testing_scaled_phenotype$Phenotype)
 perf <- performance(pred, "tpr", "fpr")
 
 auc <- performance(pred,"auc")
@@ -83,16 +95,15 @@ auc <- auc@y.values[[1]]
 
 title <- "ROC Curve association" 
 
+windows.options(width=10, height=10)
 par(pty="s")
 plot(perf,main=title,col=2,lwd=2,asp=1)
 abline(a=0,b=1,lwd=2,lty=2,col="gray")
-text(1,0.15,labels=paste("AUC = ",round(auc,digits=2),sep=""),adj=1)
-text(1,0.10,labels=paste("Accuracy = 75%",sep=""),adj=1)
+text(1,0.20,labels=paste("AUC = ",round(auc,digits=2),sep=""),adj=1)
+text(1,0.15,labels=paste("Precision = ",round(precision, digits = 2), sep=""),adj=1)
+text(1,0.10,labels=paste("Recall = ",round(recall,digits = 2), sep=""),adj=1)
 
-
-# output confusion matrix
-table(predict, testing_scaled_phenotype$problem_id)
-
+# get feature importances for test set
 RF_test_classify <- randomForest(x=testing_scaled_phenotype[,1:(ncol(testing_scaled_phenotype)-1)], y = testing_scaled_phenotype[ , ncol(testing_scaled_phenotype)] , ntree=1001, importance = TRUE, proximities=TRUE )
 RF_test_classify_importances <- as.data.frame( RF_test_classify$importance)
 RF_test_classify_importances$features <- rownames( RF_test_classify_importances)
