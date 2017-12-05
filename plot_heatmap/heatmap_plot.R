@@ -16,6 +16,5 @@ df_otu$Classification <- df_taxa$names
 
 df_melt <- melt(df_otu)
 
-hm.palette <- colorRampPalette((brewer.pal(30, 'Reds')), space='Lab')  
-ggplot(df_melt, aes(x = variable , y = Classification, fill = value)) + geom_tile() 
-    + scale_fill_gradientn(colours = hm.palette(20)) + xlab(NULL) + ylab(NULL) + theme(axis.text=element_text(size=5))
+hm.palette <- colorRampPalette((brewer.pal(11,"RdBu")), space='Lab')  
+ggplot(df_melt, aes(x = variable , y = Classification, fill = value)) + geom_tile() + scale_fill_gradientn(colours = hm.palette(10)) + xlab(NULL) + ylab(NULL) + theme(axis.text=element_text(size=5))
