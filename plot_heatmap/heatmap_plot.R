@@ -10,9 +10,7 @@ taxa_list <- read.csv("discriminative_otus_classification.csv", sep = ",", heade
 
 
 df_abundance <- as.data.frame(data)
-
 df_prevalence <- df_abundance[,c("OTU", "% Prevalence T (D)","% Prevalence NT (D)","% Prevalence T (R)","% Prevalence NT (R)")]
-
 df_abundance <- df_abundance[,c("OTU","Mean Donors T","Mean Recipients T", "Mean Donors NT", "Mean Recipients NT")]
 
 
