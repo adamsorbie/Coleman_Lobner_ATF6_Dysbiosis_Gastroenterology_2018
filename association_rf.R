@@ -31,10 +31,10 @@ setwd(home)
 ####################################################################################################################################################
 
 # load data 
-otu_table <- read.table("5wk_otu.csv", sep=",", header=T, row.names=1, stringsAsFactors=FALSE, comment.char="", check.names=FALSE)  
+otu_table <- read.table("5wk_otu_0.25.csv", sep=",", header=T, row.names=1, stringsAsFactors=FALSE, comment.char="", check.names=FALSE)  
 metadata <- read.table("metadata_5wk.csv", sep=",", header=T, row.names=1, stringsAsFactors=TRUE, comment.char="", check.names=FALSE)
 metadata_test <- read.table("metadata_asc.csv", sep=",", header=T, row.names=1, stringsAsFactors=TRUE, comment.char="", check.names=FALSE)
-testing <- read.table('association_to_predict.csv', sep = ",",header=T, row.names=1, stringsAsFactors=FALSE, comment.char="", check.names=FALSE )
+testing <- read.table('association_to_predict_0.25.csv', sep = ",",header=T, row.names=1, stringsAsFactors=FALSE, comment.char="", check.names=FALSE )
 
 # scale pre-preprocessed training data (normalised relative abundance filtered 1% abundance in at least one sample) and merge phenotype column from metadata
 
@@ -60,8 +60,8 @@ x <- otu_table_scaled_Phenotype[,1:(ncol(otu_table_scaled_Phenotype)-1)]
 y <- otu_table_scaled_Phenotype[ , ncol(otu_table_scaled_Phenotype)]
 
 # classify training set and test significance
-RF_phenotype_classify <- randomForest( x=x , y=y , ntree=200, mtry = 14, importance=TRUE, proximities=TRUE  )
-RF_phenotype_classify_sig <- rf.significance( x=RF_phenotype_classify ,  xdata=x , nperm=1000 , ntree=200) 
+RF_phenotype_classify <- randomForest( x=x , y=y , ntree=500, mtry = 13, importance=TRUE, proximities=TRUE  )
+RF_phenotype_classify_sig <- rf.significance( x=RF_phenotype_classify ,  xdata=x , nperm=1000 , ntree=500) 
 RF_phenotype_classify
 RF_phenotype_classify_sig
 
@@ -69,10 +69,10 @@ RF_phenotype_classify_sig
 # run leave-one out cross validation to test model accuracy
 fit_control <- trainControl( method = "LOOCV", savePredictions = TRUE)    
 
-RF_phenotype_classify_loocv <- train( x , y=y , method="rf", ntree=200 , tuneGrid=data.frame( mtry=c(5:26)) , trControl=fit_control )
+RF_phenotype_classify_loocv <- train( x , y=y , method="rf", ntree=500 , tuneGrid=data.frame( mtry=c(5:26)) , trControl=fit_control )
 RF_phenotype_classify_loocv$results  
 
-# get feature importance, sort by mean decrease in accuracy and plot top 10
+# get feature importance, sort by mean decrease in accuracy a
 RF_phenotype_classify_importances <- as.data.frame( RF_phenotype_classify$importance )
 RF_phenotype_classify_importances$features <- rownames( RF_phenotype_classify_importances )
 RF_phenotype_classify_importances_sorted <- arrange( RF_phenotype_classify_importances  , desc(MeanDecreaseAccuracy)  )
@@ -87,7 +87,7 @@ precision <- result$byClass['Pos Pred Value']
 recall <- result$byClass['Sensitivity']
 correct_predictions <- as.data.frame(result$table)
 correct_predictions <- correct_predictions[-c(2,3), ]
-accuracy <- sum(acc$Freq) / length(testing)
+accuracy <- sum(correct_predictions$Freq) / length(testing)
 
 
 
