@@ -102,8 +102,8 @@ auc <- auc@y.values[[1]]
 title <- "ROC Curve association" 
 
 windows.options(width=10, height=10)
-par(pty="s")
-plot(perf,main=title,col=2,lwd=2,asp=1)
+par(pty="s", cex= 1.17)
+plot(perf,main=title,col=2,lwd=2,asp=1) 
 abline(a=0,b=1,lwd=2,lty=2,col="gray")
 text(1,0.20,labels=paste("AUC = ",round(auc,digits=3),sep=""),adj=1)
 text(1,0.15,labels=paste("Accuracy = ",round(accuracy, digits = 3), sep=""),adj=1)
