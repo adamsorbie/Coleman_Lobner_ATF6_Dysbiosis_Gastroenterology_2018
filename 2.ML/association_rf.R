@@ -63,7 +63,7 @@ y <- otu_table_scaled_Phenotype[ , ncol(otu_table_scaled_Phenotype)]
 
 # classify training set and test significance
 RF_phenotype_classify <- randomForest( x=x , y=y , ntree=500, mtry = 13, importance=TRUE, proximities=TRUE  )
-RF_phenotype_classify_sig <- rf.significance( x=RF_phenotype_classify ,  xdata=x , nperm=1000 , ntree=500) 
+RF_phenotype_classify_sig <- rf.significance( x=RF_phenotype_classify ,  xdata=x , nperm=1000 , ntree=500, mtry = 13) 
 RF_phenotype_classify
 RF_phenotype_classify_sig
 
