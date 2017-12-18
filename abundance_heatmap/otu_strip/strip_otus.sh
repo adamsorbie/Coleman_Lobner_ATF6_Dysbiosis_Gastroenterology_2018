@@ -1,1 +1,0 @@
-grep -w -f otus.txt otu_for_heatmap.csv > important_otus.csv
