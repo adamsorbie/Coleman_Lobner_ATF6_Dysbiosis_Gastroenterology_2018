@@ -1,8 +1,28 @@
-  library(tidyverse)
-  library(RColorBrewer)
-  library(reshape2)
-  library(gtools)
-  
+# function to check if requirede packages are installed and if not install missing packages 
+packages <- c("tidyverse", "RColorBrewer", "reshape2", "gtools")
+
+InsPack <- function(pack)
+{
+  if ((pack %in% installed.packages()) == FALSE) {
+    install.packages(pack,repos ="http://cloud.r-project.org/")
+  } 
+}
+
+
+lapply(packages, InsPack)
+
+
+lib <- lapply(packages, require, character.only = TRUE)
+
+flag <- all(as.logical(lib))
+
+
+if(!flag) { stop("
+    It was not possible to install all required R libraries properly.
+                 Please check the installation of all required libraries manually.\n
+                 Required libaries: tidyverse, rcolorbrewer, reshape2, gtools")
+}
+#####################################################################################################################  
   # arcsine transform function 
   asinTransform <- function(p) { asin(sqrt(p/100)) }
   

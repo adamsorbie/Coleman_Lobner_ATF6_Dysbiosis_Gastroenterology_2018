@@ -1,74 +1,75 @@
-library(tidyverse)
-library(RColorBrewer)
-library(reshape2)
-library(gtools)
+# function to check if requirede packages are installed and if not install missing packages 
+packages <- c("tidyverse", "RColorBrewer", "reshape2", "gtools")
 
+InsPack <- function(pack)
+{
+  if ((pack %in% installed.packages()) == FALSE) {
+    install.packages(pack,repos ="http://cloud.r-project.org/")
+  } 
+}
+
+
+lapply(packages, InsPack)
+
+
+lib <- lapply(packages, require, character.only = TRUE)
+
+flag <- all(as.logical(lib))
+
+
+if(!flag) { stop("
+    It was not possible to install all required R libraries properly.
+                 Please check the installation of all required libraries manually.\n
+                 Required libaries: tidyverse, rcolorbrewer, reshape2, gtools")
+}
+######################################################################################################################
 # arcsine transform function 
-#asinTransform <- function(p) { asin(sqrt(p/100)) }
+asinTransform <- function(p) { asin(sqrt(p/100)) }
 
 
 
 # read input 
-df_t <- read.csv("t_5wk_mean.csv", header = TRUE, check.names = FALSE)
-df_nt <- read.csv("nt_5wk_mean.csv", header = TRUE, check.names = FALSE)
-df_t_prev <- read.csv("t_5wk_prev.csv", header = TRUE, check.names = FALSE)
-df_nt_prev <- read.csv("nt_5wk_prev.csv", header = TRUE, check.names = FALSE)
+df_mean <- read.csv("5wk_mean.csv", header = TRUE, check.names = FALSE)
+df_prev <- read.csv("5wk_prev.csv", header = TRUE, check.names = FALSE)
 
+# 0 values below threshold of 0.025 
 minval <- 0.025
-
-df_t[df_t<minval]=0
-df_nt[df_nt<minval]=0
+df_mean[df_mean<minval]=0
 
 
-df_t_melt <- melt(df_t)
-#df_t_melt[3] <- lapply(df_tg_melt[3], asinTransform)
-df_t_melt[3] <- lapply(df_tg_melt[3], log2)
-df_t_melt[mapply(is.infinite, df_t_melt)] <- NA
-df_t_melt[is.na(df_t_melt)]<- 0
+# melt abundance df, apply arcsine transform and 0 NA 
+df_mean_melt <- melt(df_mean)
+df_mean_melt[3] <- lapply(df_mean_melt[3], asinTransform)
+df_mean_melt[is.na(df_mean_melt)]<- 0
+
+# melt prevalence df 
+prev_melt <- melt(df_prev)
 
 
-df_nt_melt <- melt(df_nt)
-#df_nt_melt[3] <- lapply(df_fl_melt[3], asinTransform)
-df_nt_melt[3] <- lapply(df_nt_melt[3], log2)
-df_nt_melt[mapply(is.infinite, df_nt_melt)] <- NA
-df_nt_melt[is.na(df_nt_melt)]<- -10
+# set colour palette 
+hm.palette <- colorRampPalette(rev(brewer.pal(11,"RdYlGn")), space='Lab')
 
 
-t_melt <- melt(df_t_prev)
-nt_melt <- melt(df_nt_prev)
+# plot abundance heatmap 
+p_abundance <- ggplot(df_mean_melt, aes(x = variable , y = OTU, fill = value)) + geom_tile() + coord_fixed(expand = FALSE) +
+  scale_fill_gradientn(colours = hm.palette(10)) + theme(legend.position = "left",legend.text = element_text(size = 6)) +
+  theme(axis.text = element_blank()) + 
+  ylab(NULL) + xlab(NULL) + 
+  geom_vline(xintercept = 1.5, color = "black")
+print(p_abundance + labs(title= "Mean Abundance", subtitle = "NT    T")  + 
+        theme(plot.title = element_text(hjust = 0.2, size = 11, face = "bold"), 
+              plot.subtitle = element_text(size = 11), 
+              plot.margin = unit(c(0,0,0,0), "cm"),
+              axis.ticks = element_blank()))  
 
 
-hm.palette <- colorRampPalette((brewer.pal(11,"RdYlGn")), space='Lab')
-
-
-
-
-p_abundance_nt <- ggplot(df_nt_melt, aes(x = variable , y = OTU, fill = value)) + geom_tile() + coord_fixed(expand = FALSE) +
-  scale_fill_gradientn(colours = hm.palette(10)) + theme(legend.position = "none") +
-  theme(axis.text.y =element_text(size = 7), axis.text.x = element_blank()) +
-  ylab(NULL) + xlab(NULL) + geom_vline(xintercept = 8.5, color = "black") 
-print(p_abundance_nt + labs(title= "non-tumor mean"))#, subtitle= "                  NT                         T") 
-
-
-
-p_abundance_t <- ggplot(df_t_melt, aes(x = variable , y = OTU, fill = value)) + geom_tile() + coord_fixed(expand = FALSE) +
-  scale_fill_gradientn(colours = hm.palette(10)) + theme(legend.position = "bottom") + 
-  theme(axis.text.x=element_blank(), axis.text.y=element_blank()) + 
-  ylab(NULL) + xlab(NULL) +  geom_vline(xintercept = 1.5, color = "black") 
-print(p_abundance_t + labs(title="tumor mean")) #, subtitle = " NT                    T"))
-
-
-
-
-p_prev_nt <- ggplot(nt_melt, aes(x = variable , y = OTU, fill = value)) + geom_tile() + coord_fixed() + 
-  scale_fill_gradientn(colours = hm.palette(10)) +  theme(legend.position = "none") + 
-  theme(axis.text = element_blank()) + geom_vline(xintercept = 1.5, color = "black") +
-  xlab(NULL) + ylab(NULL) 
-print(p_prev_nt + ggtitle("NT"))
-
-
-p_prev_t <- ggplot(t_melt, aes(x = variable , y = OTU, fill = value)) + geom_tile() + coord_fixed() + 
-  scale_fill_gradientn(colours = hm.palette(10)) + theme(legend.position = "bottom")  +
-  theme(axis.text = element_blank()) + geom_vline(xintercept = 1.5, color = "black") +
-  xlab(NULL) + ylab(NULL)
-print(p_prev_t + ggtitle("T"))
+# plot prevalence heatmap  
+p_prev <- ggplot(prev_melt, aes(x = variable , y = OTU, fill = value)) + geom_tile() + coord_fixed(expand = FALSE) + 
+  scale_fill_gradientn(colours = hm.palette(10)) +  theme(legend.position = "right", legend.text = element_text(size = 6)) + 
+  theme(axis.text.y =element_text(size = 11, hjust = -0.05 ), axis.text.x = element_blank()) +  
+  xlab(NULL) + ylab(NULL) + geom_vline(xintercept = 1.5, color = "black")
+print(p_prev + labs(title = "Prevalence", subtitle ="NT   T") + 
+        theme(plot.title = element_text(hjust = 0.2, size = 11, face = "bold"),
+              plot.subtitle = element_text(size = 11),
+              plot.margin = unit(c(0,0,0,0), "cm"), 
+              axis.ticks = element_blank()))
