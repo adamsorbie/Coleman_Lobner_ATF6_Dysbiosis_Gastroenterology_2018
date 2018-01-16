@@ -1,0 +1,1 @@
+grep -w -f otus.txt otu_12_cc.csv > important_otus.csv
