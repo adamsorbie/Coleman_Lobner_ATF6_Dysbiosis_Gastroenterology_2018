@@ -1,0 +1,1 @@
+head -20 feature_importances_tumour.csv > top20.otus.txt

@@ -1,1 +1,0 @@
-grep -A1 -w -f tumor_otus.txt otu-seqs.fasta > output.fasta 

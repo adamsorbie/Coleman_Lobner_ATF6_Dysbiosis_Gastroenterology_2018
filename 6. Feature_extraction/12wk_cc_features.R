@@ -55,7 +55,7 @@ RF_phenotype_classify_sig <- rf.significance( x=RF_phenotype_classify ,  xdata=x
 RF_phenotype_classify
 RF_phenotype_classify_sig
 
-# get feature importance, sort by mean decrease in accuracy a
+# get feature importance, sort by mean decrease in accuracy 
 RF_phenotype_classify_importances <- as.data.frame( RF_phenotype_classify$importance )
 RF_phenotype_classify_importances$features <- rownames( RF_phenotype_classify_importances )
 RF_phenotype_classify_importances_sorted <- arrange( RF_phenotype_classify_importances  , desc(MeanDecreaseAccuracy)  )
